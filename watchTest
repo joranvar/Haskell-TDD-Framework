@@ -1,0 +1,13 @@
+#! /bin/sh
+watchdir=${1:-./}
+logfile=$watchdir/watchTest_lastRun.log
+touch $logfile
+while inotifywait -e create,modify --exclude \(\#\|~\|flycheck_\) -r $watchdir -q
+do
+    previous_log_length=`cat $logfile | wc -l`
+    (
+	cabal configure --enable-tests;
+	cabal build
+    ) | pv -lN "Preparing" -s $previous_log_length > $logfile
+    cabal test --show-details=streaming --test-options="--color=True"
+done
